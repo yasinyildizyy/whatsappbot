@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7
+    container_name: whatsappbot_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+
+  mongo:
+    image: mongo:6
+    container_name: whatsappbot_mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: whatsappbot_backend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend:/app
+      - ./backend/node_modules:/app/node_modules
+      - ./backend/wpp_sessions:/app/wpp_sessions
+    environment:
+      - NODE_ENV=production
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - MONGO_URI=mongodb://root:example@mongo:27017/whatsappbot?authSource=admin
+    depends_on:
+      - redis
+      - mongo
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+  mongo-data:
